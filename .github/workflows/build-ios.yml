@@ -55,7 +55,6 @@ jobs:
       - name: One native tap — live SoundCloud integration in iOS Simulator
         id: live_smoke
         if: github.event_name == 'push' || inputs.live_smoke
-        continue-on-error: true
         timeout-minutes: 12
         run: |
           set -o pipefail

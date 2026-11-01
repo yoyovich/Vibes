@@ -15,8 +15,14 @@ final class OneTapPlaybackTests: XCTestCase {
         let row = app.buttons["library-track-5CE96F2B-43AA-44EA-8B9A-ECE76BA055E6"]
         XCTAssertTrue(row.waitForExistence(timeout: 10))
         row.tap() // The only playback-start tap in this test.
-        let state = app.staticTexts["playback-state"]
-        XCTAssertTrue(state.waitForExistence(timeout: 10))
+        let state = app.descendants(matching: .any).matching(identifier: "playback-state").firstMatch
+        guard state.waitForExistence(timeout: 10) else {
+            let evidence = XCTAttachment(screenshot: app.screenshot())
+            evidence.lifetime = .keepAlways; add(evidence)
+            print(app.debugDescription)
+            XCTFail("Library tap did not expose playback state. See screenshot/accessibility hierarchy.")
+            return
+        }
         let advancing = NSPredicate { _, _ in
             let parts = (state.value as? String ?? "").split(separator: "|")
             return parts.count == 2 && parts[0] == "playing" && (Double(parts[1]) ?? 0) >= 2
@@ -26,7 +32,7 @@ final class OneTapPlaybackTests: XCTestCase {
         evidence.name = "one-native-tap-official-widget-result"; evidence.lifetime = .keepAlways
         add(evidence)
         XCTAssertEqual(started, .completed,
-            "One-tap playback NOT confirmed. State: \(state.value ?? "missing"). Error: \(app.staticTexts["playback-error"].label)")
+            "One-tap playback NOT confirmed. State: \(state.value ?? "missing"). Error: \(app.staticTexts["playback-error"].exists ? app.staticTexts["playback-error"].label : "none")")
         guard started == .completed else { return }
         print("LIVE_WIDGET_PLAY_AND_PROGRESS_CONFIRMED: \(state.value ?? "missing")")
 

@@ -227,6 +227,7 @@ struct PlaybackDock: View {
             // The official controls/artwork/creator/branding are never covered.
             SoundCloudWidgetView(engine: playback.engine)
                 .frame(height: snapshot.item == nil ? 0 : 166)
+                .allowsHitTesting(snapshot.item != nil)
                 .accessibilityHidden(snapshot.item == nil)
             if let item = snapshot.item, let url = item.mediaLink?.url {
                 Link("SoundCloud · \(item.authorName ?? "Открыть оригинал")", destination: url)

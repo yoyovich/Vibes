@@ -245,6 +245,8 @@ struct LibraryScreen: View {
                                     Image(systemName: "play.circle")
                                         .foregroundStyle(.secondary)
                                 }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("library-track-\(item.id.uuidString)")

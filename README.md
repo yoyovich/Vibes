@@ -42,6 +42,14 @@ outcome and evidence are recorded separately. An IPA or green compilation alone
 is **not one-tap acceptance**. See [observed verification](docs/verification-v0.2.md)
 and [physical-iPhone scenarios](docs/iphone-v0.2.md).
 
+**Observed live result:** [Actions run 41326024643](https://github.com/yoyovich/Vibes/actions/runs/41326024643)
+passed compilation, packaging and the real-network UI test on iPhone 17 Pro /
+iOS 26.5 Simulator. After one native Library tap, Widget PLAY and position
+`22.654486` seconds were observed; tab switching and Pause also passed. The
+compiled app metadata was verified as 0.2.0 (6). The official mobile promotion
+overlay was preserved, not clicked or hidden. This does not prove audible
+hardware output or full-track completion.
+
 No physical-iPhone audio verification is available in this workspace. Embedded
 WebKit/SoundCloud background or locked-screen continuity is **not promised**;
 AVAudioSession playback configuration cannot guarantee it. Native remote

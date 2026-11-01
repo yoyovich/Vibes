@@ -1,0 +1,42 @@
+name: Build unsigned iOS IPA
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Run URL parser tests
+        run: |
+          swiftc Sources/MediaLink.swift Tests/MediaLinkTests.swift -o /tmp/vibes-parser-tests
+          /tmp/vibes-parser-tests
+      - name: Generate Xcode project
+        run: xcodegen generate
+      - name: Build for iPhone (without signing)
+        run: |
+          xcodebuild -project Vibes.xcodeproj \
+            -scheme Vibes \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+      - name: Package unsigned IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/Vibes.app Payload/
+          zip -qry Vibes-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Vibes-unsigned-IPA
+          path: Vibes-unsigned.ipa
+          retention-days: 7

@@ -44,6 +44,17 @@ jobs:
             build | tee ios-build.log
       - name: Package unsigned IPA
         run: |
+          python3 - <<'PY'
+          import pathlib, plistlib, re
+          source = pathlib.Path('project.yml').read_text()
+          expected_version = re.search(r'MARKETING_VERSION:\s*"([^"]+)"', source).group(1)
+          expected_build = re.search(r'CURRENT_PROJECT_VERSION:\s*"([^"]+)"', source).group(1)
+          app = pathlib.Path('build/Build/Products/Release-iphoneos/Vibes.app/Info.plist')
+          info = plistlib.loads(app.read_bytes())
+          assert info['CFBundleShortVersionString'] == expected_version, info
+          assert info['CFBundleVersion'] == expected_build, info
+          print('Verified actual IPA app version:', expected_version, expected_build)
+          PY
           mkdir -p Payload
           cp -R build/Build/Products/Release-iphoneos/Vibes.app Payload/
           zip -qry Vibes-unsigned.ipa Payload

@@ -77,7 +77,7 @@ Spotify/SoundCloud audio experience is provided.
 Repository: https://github.com/yoyovich/Vibes
 
 Actions → **Build unsigned iOS IPA** → download `Vibes-unsigned-IPA`. Sign with
-your own valid certificate/profile before installing. Version **0.2.0 (4)**;
+your own valid certificate/profile before installing. Version **0.2.0 (5)**;
 bundle ID `com.yoyovich.vibes`.
 
 On a Mac:

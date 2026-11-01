@@ -21,11 +21,13 @@ struct OEmbedPayload: Decodable {
     let title: String
     let thumbnailURL: String?
     let html: String?
+    let authorName: String?
 
     enum CodingKeys: String, CodingKey {
         case title
         case thumbnailURL = "thumbnail_url"
         case html
+        case authorName = "author_name"
     }
 }
 
@@ -105,7 +107,8 @@ struct OEmbedClient {
             url: link.url.absoluteString,
             title: payload.title,
             artworkURL: payload.thumbnailURL,
-            embedURL: link.source == .soundCloud ? Self.soundCloudPlayerURL(in: payload.html)?.absoluteString : nil
+            embedURL: link.source == .soundCloud ? Self.soundCloudPlayerURL(in: payload.html)?.absoluteString : nil,
+            authorName: payload.authorName
         )
     }
 }

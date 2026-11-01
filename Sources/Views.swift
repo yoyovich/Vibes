@@ -2,11 +2,14 @@ import SwiftUI
 
 struct RootView: View {
     var body: some View {
-        TabView {
+        VStack(spacing: 0) {
+          TabView {
             SearchScreen()
                 .tabItem { Label("Поиск", systemImage: "magnifyingglass") }
             LibraryScreen()
                 .tabItem { Label("Медиатека", systemImage: "music.note.list") }
+          }
+          PlaybackDock()
         }
         .tint(.orange)
         .preferredColorScheme(.dark)
@@ -15,6 +18,7 @@ struct RootView: View {
 
 struct SearchScreen: View {
     @EnvironmentObject private var library: LibraryStore
+    @EnvironmentObject private var playback: PlaybackStore
     @State private var source: MusicSource = .soundCloud
     @State private var query = ""
     @State private var pastedLink = ""
@@ -101,6 +105,8 @@ struct SearchScreen: View {
 
     private func openSearch() {
         guard let url = source.searchURL(for: query) else { return }
+        // Search pages can contain their own media. Never overlap it with SC.
+        playback.coordinator.stop()
         browserDestination = BrowserDestination(url: url, source: source)
     }
 
@@ -203,6 +209,7 @@ struct BrowserScreen: View {
 
 struct LibraryScreen: View {
     @EnvironmentObject private var library: LibraryStore
+    @EnvironmentObject private var playback: PlaybackStore
     @State private var selectedItem: MusicItem?
 
     var body: some View {
@@ -217,7 +224,13 @@ struct LibraryScreen: View {
                 } else {
                     List {
                         ForEach(library.items) { item in
-                            Button { selectedItem = item } label: {
+                            Button {
+                                if item.source == .soundCloud { playback.coordinator.select(item) }
+                                else {
+                                    playback.coordinator.stop()
+                                    selectedItem = item
+                                }
+                            } label: {
                                 HStack(spacing: 12) {
                                     ArtworkView(urlString: item.artworkURL)
                                     VStack(alignment: .leading, spacing: 4) {
@@ -234,6 +247,7 @@ struct LibraryScreen: View {
                                 }
                             }
                             .buttonStyle(.plain)
+                            .accessibilityIdentifier("library-track-\(item.id.uuidString)")
                             .swipeActions {
                                 Button("Удалить", role: .destructive) { library.remove(item) }
                             }
@@ -244,7 +258,7 @@ struct LibraryScreen: View {
             }
             .navigationTitle("Медиатека")
             .sheet(item: $selectedItem) { item in
-                PlayerScreen(item: item)
+                SpotifyPlayerScreen(item: item)
             }
         }
     }
@@ -264,7 +278,7 @@ struct ArtworkView: View {
     }
 }
 
-struct PlayerScreen: View {
+struct SpotifyPlayerScreen: View {
     @Environment(\.dismiss) private var dismiss
     let item: MusicItem
     @State private var currentURL: URL?
@@ -281,10 +295,10 @@ struct PlayerScreen: View {
                             Text(item.source.title).font(.caption).foregroundStyle(.secondary)
                         }
                     }
-                    if let link = item.mediaLink,
+                    if item.source == .spotify, let link = item.mediaLink,
                        let embedURL = item.embedURL.flatMap(URL.init(string:)) ?? link.embedURL {
                         BrowserWebView(initialURL: embedURL, currentURL: $currentURL, failure: $failure)
-                            .frame(height: item.source == .spotify ? 370 : 210)
+                            .frame(height: 370)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                         if let failure {
                             Text(failure).foregroundStyle(.red).font(.footnote)

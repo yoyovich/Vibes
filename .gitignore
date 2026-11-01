@@ -3,3 +3,5 @@
 /Payload/
 *.ipa
 *.xcodeproj/
+*.xcresult/
+/.widget-test.html

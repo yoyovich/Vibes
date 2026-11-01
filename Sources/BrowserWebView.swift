@@ -24,6 +24,13 @@ struct BrowserWebView: UIViewRepresentable {
         context.coordinator.owner = self
     }
 
+    static func dismantleUIView(_ view: WKWebView, coordinator: Coordinator) {
+        view.stopLoading()
+        view.pauseAllMediaPlayback(completionHandler: nil)
+        view.loadHTMLString("<!doctype html><html><body></body></html>", baseURL: nil)
+        view.navigationDelegate = nil; view.uiDelegate = nil
+    }
+
     final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         var owner: BrowserWebView
         private var observation: NSKeyValueObservation?

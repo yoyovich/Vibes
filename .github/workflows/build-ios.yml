@@ -3,6 +3,11 @@ on:
   push:
     branches: [main, master]
   workflow_dispatch:
+    inputs:
+      live_smoke:
+        description: "Try real one-tap SoundCloud playback in iOS Simulator (external network)"
+        type: boolean
+        default: true
 
 jobs:
   build:
@@ -17,10 +22,17 @@ jobs:
         run: |
           swiftc Sources/MediaLink.swift Tests/MediaLinkTests.swift -o /tmp/vibes-parser-tests
           /tmp/vibes-parser-tests
+      - name: Test real playback coordinator with deterministic engine and clock
+        run: |
+          swiftc -parse-as-library Sources/MediaLink.swift Sources/MusicItem.swift Sources/PlaybackCoordinator.swift Sources/SoundCloudWidgetDocument.swift Tests/PlaybackCoordinatorTests.swift -o /tmp/vibes-playback-tests
+          /tmp/vibes-playback-tests
+          cp /tmp/vibes-widget-test.html .widget-test.html
+          node Tests/WidgetBridgeTests.js .widget-test.html
       - name: Generate Xcode project
         run: xcodegen generate
       - name: Build for iPhone (without signing)
         run: |
+          set -o pipefail
           xcodebuild -project Vibes.xcodeproj \
             -scheme Vibes \
             -configuration Release \
@@ -29,7 +41,7 @@ jobs:
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            build
+            build | tee ios-build.log
       - name: Package unsigned IPA
         run: |
           mkdir -p Payload
@@ -39,4 +51,34 @@ jobs:
         with:
           name: Vibes-unsigned-IPA
           path: Vibes-unsigned.ipa
+          retention-days: 7
+      - name: One native tap — live SoundCloud integration in iOS Simulator
+        id: live_smoke
+        if: github.event_name == 'push' || inputs.live_smoke
+        continue-on-error: true
+        timeout-minutes: 12
+        run: |
+          set -o pipefail
+          SIMULATOR_ID=$(xcrun simctl list devices available --json | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for k,vs in sorted(d["devices"].items(),reverse=True) if "iOS" in k for v in vs if v["isAvailable"] and "iPhone" in v["name"]))')
+          xcodebuild -project Vibes.xcodeproj -scheme Vibes -configuration Debug \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -derivedDataPath build-smoke -resultBundlePath live-smoke.xcresult \
+            -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            test | tee live-smoke.log
+      - name: Record live probe outcome separately from compilation
+        if: always()
+        env:
+          PROBE_OUTCOME: ${{ steps.live_smoke.outcome }}
+        run: |
+          echo "### Live SoundCloud simulator probe: ${PROBE_OUTCOME:-not-run}" >> "$GITHUB_STEP_SUMMARY"
+          echo "This is an external-network integration probe, not physical-iPhone audio verification. Failure/skipping means one-tap acceptance remains unconfirmed. The unsigned IPA artifact only proves compilation." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Vibes-live-SoundCloud-evidence
+          path: |
+            ios-build.log
+            live-smoke.log
+            live-smoke.xcresult
+          if-no-files-found: ignore
           retention-days: 7

@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-26-intel
     permissions:
       contents: read
     steps:
@@ -64,6 +64,13 @@ jobs:
             -derivedDataPath build-smoke -resultBundlePath live-smoke.xcresult \
             -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
             test | tee live-smoke.log
+      - name: Export live test summary
+        if: always()
+        run: |
+          if [ -d live-smoke.xcresult ]; then
+            xcrun xcresulttool get test-results summary --path live-smoke.xcresult > live-summary.json || true
+            cat live-summary.json
+          fi
       - name: Record live probe outcome separately from compilation
         if: always()
         env:
@@ -77,6 +84,7 @@ jobs:
           name: Vibes-live-SoundCloud-evidence
           path: |
             ios-build.log
+            live-summary.json
             live-smoke.log
             live-smoke.xcresult
           if-no-files-found: ignore

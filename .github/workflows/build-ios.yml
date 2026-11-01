@@ -11,7 +11,8 @@ on:
 
 jobs:
   build:
-    runs-on: macos-26-intel
+    runs-on: macos-15
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
@@ -77,6 +78,7 @@ jobs:
             test | tee live-smoke.log
       - name: Export live test summary
         if: always()
+        timeout-minutes: 1
         run: |
           if [ -d live-smoke.xcresult ]; then
             xcrun xcresulttool get test-results summary --path live-smoke.xcresult > live-summary.json || true

@@ -222,16 +222,15 @@ struct PlaybackDock: View {
                     Text(failure.message).font(.caption).foregroundStyle(.orange).padding(.horizontal, 12).padding(.bottom, 8)
                         .accessibilityIdentifier("playback-error")
                 }
-            }
-            // Keep this representable at one stable identity, outside TabView.
-            // The official controls/artwork/creator/branding are never covered.
-            SoundCloudWidgetView(engine: playback.engine)
-                .frame(height: snapshot.item == nil ? 0 : 166)
-                .allowsHitTesting(snapshot.item != nil)
-                .accessibilityHidden(snapshot.item == nil)
-            if let item = snapshot.item, let url = item.mediaLink?.url {
-                Link("SoundCloud · \(item.authorName ?? "Открыть оригинал")", destination: url)
-                    .font(.caption2).padding(6)
+                // Keep the same engine/webView object, but never insert an
+                // idle zero-height WKWebView into SwiftUI's hit-test hierarchy.
+                // During playback this slot stays stable outside TabView.
+                SoundCloudWidgetView(engine: playback.engine)
+                    .frame(height: 166)
+                if let url = item.mediaLink?.url {
+                    Link("SoundCloud · \(item.authorName ?? "Открыть оригинал")", destination: url)
+                        .font(.caption2).padding(6)
+                }
             }
         }
         .background(.regularMaterial)

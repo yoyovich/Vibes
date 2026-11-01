@@ -11,9 +11,16 @@ final class OneTapPlaybackTests: XCTestCase {
         app.launch()
         let library = app.tabBars.buttons["Медиатека"]
         XCTAssertTrue(library.waitForExistence(timeout: 10))
+        XCTAssertFalse(app.webViews["soundcloud-widget"].exists, "Idle web engine must not occupy the hit-test tree")
         library.tap()
-        let row = app.buttons["library-track-5CE96F2B-43AA-44EA-8B9A-ECE76BA055E6"]
-        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        let row = app.descendants(matching: .any).matching(identifier: "library-track-5CE96F2B-43AA-44EA-8B9A-ECE76BA055E6").firstMatch
+        guard row.waitForExistence(timeout: 10) else {
+            let evidence = XCTAttachment(screenshot: app.screenshot())
+            evidence.lifetime = .keepAlways; add(evidence)
+            print(app.debugDescription)
+            XCTFail("Library tab did not expose its saved track; see hierarchy")
+            return
+        }
         row.tap() // The only playback-start tap in this test.
         let state = app.descendants(matching: .any).matching(identifier: "playback-state").firstMatch
         guard state.waitForExistence(timeout: 10) else {

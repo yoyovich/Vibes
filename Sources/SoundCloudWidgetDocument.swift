@@ -61,7 +61,9 @@ enum SoundCloudWidgetDocument {
             frame.src = config.embedURL;
             widget = SC.Widget(frame);
             widget.bind(SC.Widget.Events.READY, () => {
-              ready = true; emit('ready'); apply();
+              // Native owns the latest intent. Do not auto-play a captured
+              // HTML intent: Pause may have arrived before JS even existed.
+              ready = true; emit('ready');
             });
             widget.bind(SC.Widget.Events.PLAY, () => {
               widget.isPaused(paused => {

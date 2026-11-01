@@ -35,8 +35,11 @@ function rig() {
     event(name, data) { handlers[name](data); },
     paused(value) { paused = value; }, now(value) { now = value; } };
 }
-test('READY invokes play without claiming playing', () => {
+test('READY waits for current native intent without claiming playing', () => {
   const r = rig(); r.initialize(); r.event('READY');
+  assert.deepEqual(r.commands, []);
+  assert.deepEqual(r.messages.map(m => m.event), ['ready']);
+  r.context.VibesWidget.play();
   assert.deepEqual(r.commands, ['play']);
   assert.deepEqual(r.messages.map(m => m.event), ['ready']);
 });
@@ -48,6 +51,7 @@ test('initial PAUSE does not cancel a buffering first play', () => {
 });
 test('native pause before READY wins over automatic start', () => {
   const r = rig(); r.context.VibesWidget.pause(); r.initialize(); r.event('READY');
+  r.context.VibesWidget.pause(); // Native authorizes its latest intent at READY.
   assert.deepEqual(r.commands, ['pause']);
   assert.equal(r.messages.at(-1).event, 'paused');
 });
@@ -86,6 +90,15 @@ test('sync only reports actual pause and never initiates playback', () => {
   const r = rig(); r.initialize(); r.event('READY');
   const previous = r.commands.length; r.context.VibesWidget.sync();
   assert.equal(r.commands.length, previous);
+  assert.equal(r.messages.at(-1).event, 'paused');
+});
+test('pause that predates document creation cannot be undone by READY', () => {
+  const r = rig(); r.initialize(); r.event('READY');
+  // Swift's desired=false might predate the entire script, not just READY.
+  // There must be no automatic HTML play before the native ready handshake.
+  assert.ok(!r.commands.includes('play'));
+  r.context.VibesWidget.pause();
+  assert.ok(!r.commands.includes('play'));
   assert.equal(r.messages.at(-1).event, 'paused');
 });
 console.log(`Passed: ${passed} widget bridge tests`);

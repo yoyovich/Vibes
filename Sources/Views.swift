@@ -303,9 +303,7 @@ struct SpotifyPlayerScreen: View {
                         if let failure {
                             Text(failure).foregroundStyle(.red).font(.footnote)
                         }
-                        Text(item.source == .soundCloud
-                             ? "Воспроизведение через официальный виджет SoundCloud. Некоторые треки могут быть недоступны."
-                             : "Spotify сам определяет, доступно ли полное воспроизведение или только превью.")
+                        Text("Spotify сам определяет, доступно ли полное воспроизведение или только превью.")
                             .foregroundStyle(.secondary)
                             .font(.footnote)
                         Link("Открыть на \(item.source.title)", destination: link.url)

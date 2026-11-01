@@ -113,7 +113,9 @@ final class SoundCloudPlaybackEngine: NSObject, PlaybackEngine, WKNavigationDele
               let rawID = body["requestID"] as? String, let id = UUID(uuidString: rawID), id == requestID,
               let event = body["event"] as? String else { return }
         switch event {
-        case "ready": onEvent?(id, .ready)
+        case "ready":
+            onEvent?(id, .ready)
+            command(wantsPlayback ? "play" : "pause", requestID: id)
         case "playing": wantsPlayback = true; onEvent?(id, .playing)
         case "paused": wantsPlayback = false; onEvent?(id, .paused)
         case "finished": wantsPlayback = false; onEvent?(id, .finished)

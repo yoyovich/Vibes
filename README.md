@@ -29,7 +29,7 @@ launch is labelled as full/native Spotify playback. App Remote is not added.
 
 ## Verification and limits
 
-Local: **21 coordinator/document tests**, **9 generated-JavaScript bridge tests**,
+Local: **21 coordinator/document tests**, **10 generated-JavaScript bridge tests**,
 existing URL tests and iOS-targeted Swift syntax parsing pass. These test
 1,000 switches, stale callbacks/timers, real event-driven states, failures,
 retry, migration and initial paused/buffering behavior. They do not prove audio.
@@ -51,7 +51,7 @@ lock-screen controls are not implemented.
 
 Before WKWebView creation the app sets the public
 `mediaTypesRequiringUserActionForPlayback = []` policy; the visible iframe allows
-autoplay. Widget READY calls supported `play()`. A SwiftUI tap is not a trusted
+autoplay. Widget READY asks native code to authorize the latest play/pause intent. A SwiftUI tap is not a trusted
 JavaScript gesture; no synthetic clicks or private WebKit preferences are used.
 SoundCloud's mobile policy, regional/owner restrictions or consent can still
 block startup. Missing PLAY becomes an explicit timeout, not simulated success.
@@ -77,7 +77,7 @@ Spotify/SoundCloud audio experience is provided.
 Repository: https://github.com/yoyovich/Vibes
 
 Actions → **Build unsigned iOS IPA** → download `Vibes-unsigned-IPA`. Sign with
-your own valid certificate/profile before installing. Version **0.2.0 (2)**;
+your own valid certificate/profile before installing. Version **0.2.0 (3)**;
 bundle ID `com.yoyovich.vibes`.
 
 On a Mac:

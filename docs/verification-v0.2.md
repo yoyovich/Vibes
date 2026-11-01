@@ -13,7 +13,7 @@ and widget track ID 293. Metadata/embed availability does not prove audio playba
 - 21 actual PlaybackCoordinator/document tests with injected deterministic
   engine/timers: 1,000 switches, stale callbacks/timers, event acknowledgements,
   timeouts, retry, interruptions, v0.1 decoding and document safety.
-- 9 tests execute the generated JavaScript bridge against a mock public Widget
+- 10 tests execute the generated JavaScript bridge against a mock public Widget
   API: READY versus PLAY, buffering PAUSE, pause before readiness, stale PLAY,
   real event positions, finish, script errors and synchronization.
 - Existing URL parsing tests pass; Swift source passes iOS-targeted syntax

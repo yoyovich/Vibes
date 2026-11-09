@@ -48,7 +48,7 @@ struct StatisticsView: View {
                     .pickerStyle(.segmented)
                     ForecastChart(entries: forecast, currencyCode: base)
                     ValueRow(title: Text("Total for the period")) {
-                        Text(forecast.reduce(Decimal(0)) { $0 + $1.amount }.currencyText(base))
+                        Text(forecast.sum(of: \.amount).currencyText(base))
                             .bold()
                     }
                 } header: {

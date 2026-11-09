@@ -67,7 +67,7 @@ struct CategorySharesChart: View {
                 description: Text("Active subscriptions will appear here.")
             )
         } else {
-            let total = totals.reduce(Decimal(0)) { $0 + $1.amount }
+            let total = totals.sum(of: \.amount)
             Chart(totals) { entry in
                 SectorMark(
                     angle: .value("Amount", entry.amount.doubleValue),

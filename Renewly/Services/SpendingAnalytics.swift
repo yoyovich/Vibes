@@ -47,7 +47,11 @@ struct SpendingAnalytics: Sendable {
     }
 
     func monthlyTotal(_ subscriptions: [SubscriptionSnapshot], now: Date) -> Decimal {
-        inEffect(subscriptions, now: now).reduce(Decimal(0)) { $0 + monthlyInBase($1) }
+        var total = Decimal(0)
+        for subscription in inEffect(subscriptions, now: now) {
+            total += monthlyInBase(subscription)
+        }
+        return total
     }
 
     func yearlyTotal(_ subscriptions: [SubscriptionSnapshot], now: Date) -> Decimal {
@@ -62,28 +66,34 @@ struct SpendingAnalytics: Sendable {
         let calendar = schedule.calendar
         let today = calendar.startOfDay(for: now)
         guard let end = calendar.date(byAdding: .day, value: days + 1, to: today) else { return [] }
-        return subscriptions
-            .flatMap { subscription in
-                schedule.charges(of: subscription, from: today, to: end, now: now).map { date in
-                    UpcomingCharge(
-                        subscriptionID: subscription.id,
-                        name: subscription.name,
-                        date: date,
-                        amount: subscription.amount,
-                        currencyCode: subscription.currencyCode,
-                        daysLeft: schedule.daysUntil(date, now: now)
-                    )
-                }
+        var result: [UpcomingCharge] = []
+        for subscription in subscriptions {
+            for date in schedule.charges(of: subscription, from: today, to: end, now: now) {
+                result.append(UpcomingCharge(
+                    subscriptionID: subscription.id,
+                    name: subscription.name,
+                    date: date,
+                    amount: subscription.amount,
+                    currencyCode: subscription.currencyCode,
+                    daysLeft: schedule.daysUntil(date, now: now)
+                ))
             }
-            .sorted { ($0.date, $0.name) < ($1.date, $1.name) }
+        }
+        result.sort { lhs, rhs in
+            lhs.date == rhs.date ? lhs.name < rhs.name : lhs.date < rhs.date
+        }
+        return result
     }
 
     func categoryTotals(_ subscriptions: [SubscriptionSnapshot], now: Date) -> [CategoryAmount] {
-        let grouped = Dictionary(grouping: inEffect(subscriptions, now: now), by: \.category)
-        return grouped
-            .map { CategoryAmount(category: $0.key, amount: $0.value.reduce(Decimal(0)) { $0 + monthlyInBase($1) }) }
-            .filter { $0.amount > 0 }
-            .sorted { $0.amount > $1.amount }
+        var sums: [SubscriptionCategory: Decimal] = [:]
+        for subscription in inEffect(subscriptions, now: now) {
+            sums[subscription.category, default: 0] += monthlyInBase(subscription)
+        }
+        let totals: [CategoryAmount] = sums.compactMap { category, amount in
+            amount > 0 ? CategoryAmount(category: category, amount: amount) : nil
+        }
+        return totals.sorted { $0.amount > $1.amount }
     }
 
     /// Real charges per calendar month for the current month and the following ones.
@@ -115,10 +125,15 @@ struct SpendingAnalytics: Sendable {
     }
 
     func mostExpensive(_ subscriptions: [SubscriptionSnapshot], now: Date, limit: Int = 5) -> [RankedSubscription] {
-        inEffect(subscriptions, now: now)
-            .map { RankedSubscription(subscription: $0, monthlyInBase: monthlyInBase($0)) }
-            .sorted { $0.monthlyInBase == $1.monthlyInBase ? $0.subscription.name < $1.subscription.name : $0.monthlyInBase > $1.monthlyInBase }
-            .prefix(limit)
-            .map { $0 }
+        let ranked: [RankedSubscription] = inEffect(subscriptions, now: now).map { subscription in
+            RankedSubscription(subscription: subscription, monthlyInBase: monthlyInBase(subscription))
+        }
+        let sorted = ranked.sorted { lhs, rhs in
+            if lhs.monthlyInBase != rhs.monthlyInBase {
+                return lhs.monthlyInBase > rhs.monthlyInBase
+            }
+            return lhs.subscription.name < rhs.subscription.name
+        }
+        return Array(sorted.prefix(limit))
     }
 }

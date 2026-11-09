@@ -52,6 +52,9 @@ enum ReminderPlanner {
                 perSubscription += 1
             }
         }
-        return Array(plans.sorted { ($0.fireDate, $0.name) < ($1.fireDate, $1.name) }.prefix(limit))
+        plans.sort { lhs, rhs in
+            lhs.fireDate == rhs.fireDate ? lhs.name < rhs.name : lhs.fireDate < rhs.fireDate
+        }
+        return Array(plans.prefix(limit))
     }
 }

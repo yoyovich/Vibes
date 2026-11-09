@@ -50,3 +50,14 @@ extension Decimal {
 
     var doubleValue: Double { NSDecimalNumber(decimal: self).doubleValue }
 }
+
+extension Sequence {
+    /// Sum of decimal values, written as a loop to keep type checking fast.
+    func sum(of value: (Element) -> Decimal) -> Decimal {
+        var total = Decimal(0)
+        for element in self {
+            total += value(element)
+        }
+        return total
+    }
+}

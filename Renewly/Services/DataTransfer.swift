@@ -146,7 +146,8 @@ struct DataTransfer {
     }
 
     static func csvField(_ value: String) -> String {
-        guard value.contains(where: { $0 == "," || $0 == "\"" || $0 == "\n" || $0 == "\r" }) else { return value }
+        let special: Set<Character> = [",", "\"", "\n", "\r", "\r\n"]
+        guard value.contains(where: { special.contains($0) }) else { return value }
         return "\"" + value.replacingOccurrences(of: "\"", with: "\"\"") + "\""
     }
 

@@ -1,0 +1,5 @@
+// Signing and identity for the Renewly app target.
+// Change only these two values: your own unique Bundle ID and your Apple Team ID.
+PRODUCT_BUNDLE_IDENTIFIER = com.example.renewly
+DEVELOPMENT_TEAM = XXXXXXXXXX
+CODE_SIGN_STYLE = Automatic

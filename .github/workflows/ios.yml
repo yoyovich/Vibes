@@ -1,0 +1,95 @@
+name: iOS build and tests
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          major=$(xcodebuild -version | awk '/^Xcode/ {split($2, v, "."); print v[1]}')
+          if [ "$major" -lt 16 ]; then
+            echo "::error::Xcode 16 or newer is required (found $major)"
+            exit 1
+          fi
+
+      - name: Pick an available iPhone simulator
+        id: simulator
+        run: |
+          UDID=$(xcrun simctl list devices available --json | python3 -c '
+          import json, re, sys
+          data = json.load(sys.stdin)["devices"]
+          def version(runtime):
+              match = re.search(r"iOS-(\d+)-(\d+)", runtime)
+              return tuple(int(x) for x in match.groups()) if match else (0, 0)
+          candidates = [
+              (version(runtime), device["name"], device["udid"])
+              for runtime, devices in data.items() if "iOS" in runtime
+              for device in devices if device.get("isAvailable") and device["name"].startswith("iPhone")
+          ]
+          if not candidates:
+              sys.exit("No available iPhone simulator")
+          candidates.sort(key=lambda c: (c[0], c[1]))
+          best = candidates[-1]
+          print(best[2])
+          print(f"Using {best[1]} on iOS {best[0][0]}.{best[0][1]}", file=sys.stderr)
+          ')
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Build for iPhone (generic device, unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project Renewly.xcodeproj \
+            -scheme Renewly \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedData-device \
+            CODE_SIGNING_ALLOWED=NO | tee build-device.log
+
+      - name: Build and run unit tests on the simulator (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project Renewly.xcodeproj \
+            -scheme Renewly \
+            -destination "platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}" \
+            -derivedDataPath build/DerivedData-sim \
+            -resultBundlePath build/Tests.xcresult \
+            CODE_SIGNING_ALLOWED=NO | tee test.log
+
+      - name: Summarize warnings in project sources
+        if: always()
+        run: |
+          {
+            echo "### Compiler warnings in Renewly sources"
+            grep -hE "/(Renewly|RenewlyTests)/[^:]+:[0-9]+:[0-9]+: warning:" build-device.log test.log 2>/dev/null | sort -u || true
+            echo
+            echo "### Test summary"
+            grep -E "Executed [0-9]+ tests" test.log | tail -1 || true
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: renewly-build-logs
+          path: |
+            build-device.log
+            test.log
+            build/Tests.xcresult
+          if-no-files-found: ignore
+          retention-days: 7

@@ -1,7 +1,7 @@
 .DS_Store
-/build/
-/Payload/
+build/
+DerivedData/
+*.xcresult
+xcuserdata/
+*.xcuserstate
 *.ipa
-*.xcodeproj/
-*.xcresult/
-/.widget-test.html
